@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ashera-fe-ingress
+  annotations:
+    # 중요: 사용하는 Ingress Controller에 맞는 클래스를 지정하세요. (예: "nginx")
+    kubernetes.io/ingress.class: "nginx"
+    # HTTPS를 사용하려면 아래 주석을 해제하고 TLS secret을 설정하세요.
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  rules:
+  - host: "ashera.your-domain.com" # <-- 중요: 실제 도메인으로 변경하세요
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ashera-fe-service
+            port:
+              number: 80
+  # tls: # <-- HTTPS를 사용하려면 주석을 해제하고 secret 이름을 지정하세요.
+  # - hosts:
+  #   - "ashera.your-domain.com"
+  #   secretName: ashera-tls-secret

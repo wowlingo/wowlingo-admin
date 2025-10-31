@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ashera-fe
+    argocd.argoproj.io/instance: ashera-fe
+  name: ashera-fe-sandbox-service
+  namespace: sandbox-api
+spec:
+  selector:
+    app: ashera-fe
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP

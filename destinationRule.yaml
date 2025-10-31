@@ -1,0 +1,40 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  labels:
+    argocd.argoproj.io/instance: ashera-fe
+  name: ashera-fe-sandbox-destination-rule
+  namespace: sandbox-api
+spec:
+  host: ashera-fe-sandbox-service.sandbox-api.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        h2UpgradePolicy: DEFAULT
+        http1MaxPendingRequests: 500
+        http2MaxRequests: 1000
+        idleTimeout: 3m
+        maxConcurrentStreams: 500
+        maxRequestsPerConnection: 5000
+        maxRetries: 5
+        useClientProtocol: true
+      tcp:
+        connectTimeout: 3s
+        idleTimeout: 3m
+        maxConnectionDuration: 10m
+        maxConnections: 5000
+        tcpKeepalive:
+          probes: 5
+          time: 15s
+    loadBalancer:
+      simple: LEAST_REQUEST
+    outlierDetection:
+      baseEjectionTime: 30s
+      consecutive5xxErrors: 5
+      consecutiveGatewayErrors: 5
+      interval: 10s
+      maxEjectionPercent: 20
+      minHealthPercent: 70
+      splitExternalLocalOriginErrors: false
+    tls:
+      mode: DISABLE
