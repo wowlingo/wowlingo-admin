@@ -180,14 +180,14 @@ const UnitPage: React.FC = () => {
       title: 'ID',
       dataIndex: 'questItemUnitId',
       key: 'questItemUnitId',
-      width: 80,
+      width: 70,
       sorter: (a, b) => a.questItemUnitId - b.questItemUnitId,
     },
     {
       title: '텍스트',
       dataIndex: 'str',
       key: 'str',
-      width: 250,
+      width: 200,
       render: (text: string) => (
         <div style={{ fontSize: '16px' }}>{text}</div>
       ),
@@ -218,12 +218,18 @@ const UnitPage: React.FC = () => {
     {
       title: '오디오',
       key: 'audio',
-      width: 180,
+      width: 300,
       render: (_: any, record: QuestUnit) => (
-        <AudioPlayer
-          urlNormal={record.urlNormal}
-          urlSlow={record.urlSlow}
-        />
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <AudioPlayer
+            urlNormal={record.urlNormal}
+            urlSlow={record.urlSlow}
+          />
+          <div style={{ fontSize: '9px', color: '#999', wordBreak: 'break-all' }}>
+            <div>일반: {record.urlNormal}</div>
+            <div>느림: {record.urlSlow}</div>
+          </div>
+        </Space>
       ),
     },
     {
