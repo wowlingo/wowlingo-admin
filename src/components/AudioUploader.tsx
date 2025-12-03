@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, message, Button, Space, Card } from 'antd';
+import { Upload, message, Button, Space, Card, Modal, Input } from 'antd';
 import {
   InboxOutlined,
   DeleteOutlined,
@@ -28,8 +28,11 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
   const [uploading, setUploading] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | undefined>(value);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [customFileName, setCustomFileName] = useState('');
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = async (file: File, customName?: string) => {
     const isAudio = file.type.startsWith('audio/');
     const audioExtensions = ['.mp3', '.wav', '.ogg', '.webm'];
     const hasAudioExtension = audioExtensions.some(ext =>
@@ -43,15 +46,47 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
 
     setUploading(true);
     try {
-      const url = await uploadAPI.uploadAudio(file);
+      let fileToUpload = file;
+
+      if (customName) {
+        const extension = file.name.substring(file.name.lastIndexOf('.'));
+        const newFileName = customName.endsWith(extension) ? customName : customName + extension;
+        fileToUpload = new File([file], newFileName, { type: file.type });
+      }
+
+      const url = await uploadAPI.uploadAudio(fileToUpload);
       setFileUrl(url);
       onChange?.(url);
-      message.success(`${file.name} 업로드 성공!`);
+      message.success(`${fileToUpload.name} 업로드 성공!`);
     } catch (error) {
       message.error('파일 업로드 실패: ' + (error as Error).message);
     } finally {
       setUploading(false);
     }
+  };
+
+  const showFileNameModal = (file: File) => {
+    setPendingFile(file);
+    const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+    setCustomFileName(nameWithoutExt);
+    setEditModalVisible(true);
+  };
+
+  const handleModalOk = () => {
+    if (pendingFile && customFileName.trim()) {
+      handleFileSelect(pendingFile, customFileName.trim());
+      setEditModalVisible(false);
+      setPendingFile(null);
+      setCustomFileName('');
+    } else {
+      message.error('파일 이름을 입력해주세요.');
+    }
+  };
+
+  const handleModalCancel = () => {
+    setEditModalVisible(false);
+    setPendingFile(null);
+    setCustomFileName('');
   };
 
   const uploadProps: UploadProps = {
@@ -60,7 +95,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
     accept: 'audio/*,.mp3,.wav,.ogg,.webm',
     showUploadList: false,
     beforeUpload: (file) => {
-      handleFileSelect(file);
+      showFileNameModal(file);
       return false;
     },
   };
@@ -72,7 +107,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleFileSelect(file);
+      showFileNameModal(file);
     }
     e.target.value = '';
   };
@@ -164,6 +199,32 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
             </Space>
           </Card>
         )}
+
+        <Modal
+          title="파일 이름 변경"
+          open={editModalVisible}
+          onOk={handleModalOk}
+          onCancel={handleModalCancel}
+          confirmLoading={uploading}
+          okText="업로드"
+          cancelText="취소"
+        >
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ marginBottom: 8, color: '#666' }}>
+              원본 파일: <strong>{pendingFile?.name}</strong>
+            </p>
+            <p style={{ marginBottom: 16, fontSize: '12px', color: '#999' }}>
+              파일 확장자는 자동으로 추가됩니다.
+            </p>
+          </div>
+          <Input
+            placeholder="파일 이름을 입력하세요"
+            value={customFileName}
+            onChange={(e) => setCustomFileName(e.target.value)}
+            onPressEnter={handleModalOk}
+            autoFocus
+          />
+        </Modal>
       </div>
     );
   }
@@ -222,6 +283,32 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
           </Space>
         </Card>
       )}
+
+      <Modal
+        title="파일 이름 변경"
+        open={editModalVisible}
+        onOk={handleModalOk}
+        onCancel={handleModalCancel}
+        confirmLoading={uploading}
+        okText="업로드"
+        cancelText="취소"
+      >
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ marginBottom: 8, color: '#666' }}>
+            원본 파일: <strong>{pendingFile?.name}</strong>
+          </p>
+          <p style={{ marginBottom: 16, fontSize: '12px', color: '#999' }}>
+            파일 확장자는 자동으로 추가됩니다.
+          </p>
+        </div>
+        <Input
+          placeholder="파일 이름을 입력하세요"
+          value={customFileName}
+          onChange={(e) => setCustomFileName(e.target.value)}
+          onPressEnter={handleModalOk}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 };
