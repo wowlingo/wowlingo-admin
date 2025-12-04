@@ -1,300 +1,454 @@
-import React, { useEffect, useState } from 'react';
-import { Typography, Input, Select, Button, Space, Table, Tag, Modal, message } from 'antd';
-import { SoundOutlined } from '@ant-design/icons';
-import { ColumnsType } from 'antd/es/table';
-import { config } from '../config';
-import { idText } from 'typescript';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Typography,
+  Button,
+  Table,
+  Tag,
+  Space,
+  Modal,
+  message,
+  Tooltip,
+  Input,
+  Select,
+  Row,
+  Col,
+  Card,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ClearOutlined,
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { AudioPlayer } from '../components';
+import QuestItemFormModal from '../components/QuestItemFormModal';
+import { questItemAPI, questAPI } from '../services/api';
+import type { QuestItem, Quest } from '../types';
 
 const { Title } = Typography;
-const { Option } = Select;
-
-const ItemTypeTag = ({ type }: { type: string }) => {
-    const typeMap = {
-        SameDifferent: { color: 'blue', text: '같아요/달라요' },
-        StatementQuestion: { color: 'purple', text: '의문문/평서문' },
-        Choice: { color: 'green', text: '1개 선택' },
-        None: { color: 'gray', text: '없음' },
-    };
-
-    let currentType = typeMap.None;
-    switch (type) {
-        case 'same-different':
-            currentType = typeMap.SameDifferent; break;
-        case 'statement-question':
-            currentType = typeMap.StatementQuestion; break;
-        case 'choice':
-            currentType = typeMap.Choice; break;
-        default:
-            currentType = typeMap.None;
-    }
-
-    return (
-        <Tag color={currentType.color}>
-            {currentType.text}
-        </Tag>
-    );
-};
-
-const ItemAnswerTag = ({ answer }: { answer: string | null }) => {
-    const typeMap = {
-        Same: { color: 'blue', text: '같아요' },
-        Different: { color: 'geekblue', text: '달라요' },
-        Statement: { color: 'purple', text: '평서문' },
-        Question: { color: 'magenta', text: '의문문' },
-        Choice: { color: 'green', text: '1개 선택' },
-        None: { color: 'gray', text: '없음' },
-    };
-
-    let currentType = typeMap.None;
-    switch (answer) {
-        case 'same':
-            currentType = typeMap.Same; break;
-        case 'different':
-            currentType = typeMap.Different; break;
-        case 'statement':
-            currentType = typeMap.Statement; break;
-        case 'question':
-            currentType = typeMap.Question; break;
-        case 'choice':
-            currentType = typeMap.Choice; break;
-        default:
-            return <Tag closeIcon='null'></Tag>;
-    }
-
-    return (
-        <Tag bordered={false} color={currentType.color}>
-            {currentType.text}
-        </Tag>
-    );
-};
-
-interface Item {
-    // key: React.Key;
-
-    questItemId: number;
-    questId: number;
-    type: string;
-    answerOx: string | null;
-    answerSq: string | null;
-    answer1: string | null;
-    answer2: string | null;
-    remark: string | null;
-
-    questUnit1: {
-        quest_item_unit_id: number;
-        type: string;
-        str: string;
-        url_normal: string;
-        url_slow: string;
-        remark: string | null;
-    };
-
-    questUnit2: {
-        quest_item_unit_id: number;
-        type: string;
-        str: string;
-        url_normal: string;
-        url_slow: string;
-        remark: string | null;
-    };
-}
-
-const columns: ColumnsType<Item> = [
-    {
-        title: 'ID',
-        dataIndex: 'questItemId',
-        key: 'questItemId',
-    },
-    {
-        title: '타입',
-        dataIndex: 'type',
-        key: 'type',
-        render: (type: string) => (
-            <ItemTypeTag type={type} />
-        ),
-    },
-    {
-        title: '문제1',
-        dataIndex: ['questUnit1', 'str'],
-        key: 'unit1_name',
-    },
-    {
-        title: '문제1 보통',
-        dataIndex: ['questUnit1', 'url_normal'],
-        key: 'unit1_normal',
-        render: (url: string) => {
-            const handlePlay = () => {
-                const audio = new Audio(url);
-                audio.play().catch((err) => {
-                    console.error('오디오 재생 실패:', err);
-                });
-            };
-
-            return (
-                <Space>
-                    <Button
-                        type="text"
-                        icon={<SoundOutlined />}
-                        onClick={handlePlay}
-                        disabled={!url}
-                    />
-                </Space>
-            );
-        }
-    },
-    {
-        title: '문제1 느리게',
-        dataIndex: ['questUnit1', 'url_slow'],
-        key: 'unit1_slow',
-        render: (url: string) => {
-            const handlePlay = () => {
-                const audio = new Audio(url);
-                audio.play().catch((err) => {
-                    console.error('오디오 재생 실패:', err);
-                });
-            };
-
-            return (
-                <Space>
-                    <Button
-                        type="text"
-                        icon={<SoundOutlined />}
-                        onClick={handlePlay}
-                        disabled={!url}
-                    />
-                </Space>
-            );
-        }
-    },
-    {
-        title: '문제2',
-        dataIndex: ['questUnit2', 'str'],
-        key: 'unit2_name',
-    },
-    {
-        title: '문제2 보통',
-        dataIndex: ['questUnit2', 'url_normal'],
-        key: 'unit2_normal',
-        render: (url: string) => {
-            const handlePlay = () => {
-                const audio = new Audio(url);
-                audio.play().catch((err) => {
-                    console.error('오디오 재생 실패:', err);
-                });
-            };
-
-            return (
-                <Space>
-                    <Button
-                        type="text"
-                        icon={<SoundOutlined />}
-                        onClick={handlePlay}
-                        disabled={!url}
-                    />
-                </Space>
-            );
-        }
-    },
-    {
-        title: '문제2 느리게',
-        dataIndex: ['questUnit2', 'url_slow'],
-        key: 'unit2_slow',
-        render: (url: string) => {
-            const handlePlay = () => {
-                const audio = new Audio(url);
-                audio.play().catch((err) => {
-                    console.error('오디오 재생 실패:', err);
-                });
-            };
-
-            return (
-                <Space>
-                    <Button
-                        type="text"
-                        icon={<SoundOutlined />}
-                        onClick={handlePlay}
-                        disabled={!url}
-                    />
-                </Space>
-            );
-        }
-    },
-    {
-        title: '보기 1',
-        dataIndex: 'answer1',
-        key: 'answer1',
-    },
-    {
-        title: '보기 2',
-        dataIndex: 'answer2',
-        key: 'answer2',
-    },
-    {
-        title: '정답',
-        key: 'answer',
-        render: (text: any, record: Item) => {
-            if (record.type === 'same-different') {
-                return <ItemAnswerTag answer={record.answerOx} />
-            }
-            else if (record.type === 'statement-question') {
-                return <ItemAnswerTag answer={record.answerSq} />
-            }
-
-            return '';
-        }
-    },
-];
+const { Search } = Input;
 
 const ItemPage: React.FC = () => {
-    const [Items, setItems] = useState<Item[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [messageApi, contextHolder] = message.useMessage();
+  const [items, setItems] = useState<QuestItem[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedItem, setSelectedItem] = useState<QuestItem | null>(null);
+  const [messageApi, contextHolder] = message.useMessage();
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch(`${config.apiServer}/api/admin/quest/items`);
-                if (!response.ok) {
-                    throw new Error('데이터를 불러오는데 실패했습니다.');
-                }
-                const data = await response.json();
-                // console.log(data)
+  // Filters
+  const [searchText, setSearchText] = useState('');
+  const [selectedQuestId, setSelectedQuestId] = useState<number | undefined>(undefined);
+  const [selectedType, setSelectedType] = useState<string | undefined>(undefined);
 
-                const jsonArrays = data.data ?? [];
-                console.log(jsonArrays)
+  useEffect(() => {
+    loadItems();
+    loadQuests();
+  }, []);
 
-                // key 값이 없는 경우, paymentMethodKey.value를 key로 사용
-                const processedData = jsonArrays.map((item: any, index: number) => ({
-                    ...item,
-                    key: item.questItemId || index,
-                }));
-                console.log(processedData)
+  const loadItems = async () => {
+    setLoading(true);
+    try {
+      const data = await questItemAPI.getAll();
+      const dataWithKeys = data.map((item) => ({
+        ...item,
+        key: item.questItemId,
+      }));
+      setItems(dataWithKeys);
+    } catch (error) {
+      messageApi.error('데이터를 불러오는데 실패했습니다: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const loadQuests = async () => {
+    try {
+      const data = await questAPI.getAll();
+      setQuests(data);
+    } catch (error) {
+      console.error('Failed to load quests:', error);
+    }
+  };
 
-                setItems(processedData);
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesSearch = searchText
+        ? item.questItemId.toString().includes(searchText) ||
+          item.type.toLowerCase().includes(searchText.toLowerCase()) ||
+          (item.quest?.title || '').toLowerCase().includes(searchText.toLowerCase())
+        : true;
 
-            } catch (error) {
-                if (error instanceof Error) {
-                    messageApi.error(error.message);
-                } else {
-                    messageApi.error('알 수 없는 오류가 발생했습니다.');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
+      const matchesQuest = selectedQuestId
+        ? item.questId === selectedQuestId
+        : true;
 
-        fetchItems();
-    }, [messageApi]);
+      const matchesType = selectedType
+        ? item.type === selectedType
+        : true;
 
-    return (
-        <div style={{ padding: 24, minHeight: 360, background: '#fff', borderRadius: '8px' }}>
-            {contextHolder}
-            <Title level={3}>문제 목록</Title>
-            <Table dataSource={Items} columns={columns} loading={loading} />
+      return matchesSearch && matchesQuest && matchesType;
+    });
+  }, [items, searchText, selectedQuestId, selectedType]);
+
+  const uniqueTypes = useMemo(() => {
+    return Array.from(new Set(items.map(item => item.type)));
+  }, [items]);
+
+  const handleCreate = () => {
+    setModalMode('create');
+    setSelectedItem(null);
+    setModalVisible(true);
+  };
+
+  const handleEdit = (item: QuestItem) => {
+    setModalMode('edit');
+    setSelectedItem(item);
+    setModalVisible(true);
+  };
+
+  const handleDelete = (item: QuestItem) => {
+    Modal.confirm({
+      title: 'Quest Item 삭제',
+      content: (
+        <div>
+          <p>정말로 이 Quest Item을 삭제하시겠습니까?</p>
+          <p style={{ marginTop: 8, fontWeight: 'bold' }}>
+            ID: {item.questItemId} (타입: {item.type})
+          </p>
+          <p style={{ marginTop: 8, fontSize: '12px', color: '#999' }}>
+            이 Item이 User Quest에서 사용 중인 경우 삭제할 수 없습니다.
+          </p>
         </div>
-    );
+      ),
+      okText: '삭제',
+      okType: 'danger',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          await questItemAPI.delete(item.questItemId);
+          messageApi.success('Quest Item이 삭제되었습니다.');
+          loadItems();
+        } catch (error) {
+          messageApi.error('삭제 실패: ' + (error as Error).message);
+        }
+      },
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchText('');
+    setSelectedQuestId(undefined);
+    setSelectedType(undefined);
+  };
+
+  const getTypeTag = (type: string) => {
+    const colors: Record<string, string> = {
+      'choice': 'blue',
+      'statement-question': 'green',
+      'same-different': 'orange',
+    };
+    return <Tag color={colors[type] || 'default'}>{type}</Tag>;
+  };
+
+  const getAnswerDisplay = (item: QuestItem) => {
+    if (item.type === 'choice') {
+      // Find correct answer (intersection of questions and answers)
+      const questions = [item.question1, item.question2].filter(q => q != null);
+      const answers = [item.answer1, item.answer2].filter(a => a != null);
+      const correctAnswer = questions.find(q => answers.includes(q));
+      return correctAnswer ? `Unit ID: ${correctAnswer}` : '-';
+    } else if (item.type === 'statement-question') {
+      return item.answerSq === 'statement' ? '평서문' : '의문문';
+    } else if (item.type === 'same-different') {
+      return item.answerOx === 'same' ? '같아요 (O)' : '달라요 (X)';
+    }
+    return '-';
+  };
+
+  const columns: ColumnsType<QuestItem> = [
+    {
+      title: 'ID',
+      dataIndex: 'questItemId',
+      key: 'questItemId',
+      width: 50,
+      sorter: (a, b) => a.questItemId - b.questItemId,
+    },
+    {
+      title: 'Quest',
+      dataIndex: ['quest', 'title'],
+      key: 'quest',
+      width: 120,
+      ellipsis: true,
+      render: (_, record) => (
+        <div>
+          <span style={{ fontSize: '12px', color: '#999' }}>
+            ID: {record.questId}
+          </span>
+          <div style={{ fontWeight: 500 }}>{record.quest?.title || '-'}</div>
+        </div>
+      ),
+    },
+    {
+      title: '타입',
+      dataIndex: 'type',
+      key: 'type',
+      width: 150,
+      render: (type: string) => getTypeTag(type),
+    },
+    {
+      title: '문제',
+      key: 'questions',
+      width: 300,
+      render: (_, record) => (
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          {record.questUnit1 && (
+            <div>
+              <Tag color="blue">Q1</Tag>
+              <span style={{ marginLeft: 4, fontSize: '14px' }}>
+                {record.questUnit1.str}
+              </span>
+              <span style={{ marginLeft: 4, fontSize: '12px', color: '#999' }}>
+                ID: {(record.questUnit1 as any).questItemUnitId || (record.questUnit1 as any).quest_item_unit_id || record.question1}
+              </span>
+              <div style={{ marginTop: 4 }}>
+                <AudioPlayer
+                  urlNormal={record.questUnit1.urlNormal}
+                  urlSlow={record.questUnit1.urlSlow}
+                  size="small"
+                />
+              </div>
+            </div>
+          )}
+          {record.questUnit2 && (
+            <div style={{ marginTop: 8 }}>
+              <Tag color="cyan">Q2</Tag>
+              <span style={{ marginLeft: 4, fontSize: '14px' }}>
+                {record.questUnit2.str}
+              </span>
+              <span style={{ marginLeft: 4, fontSize: '12px', color: '#999' }}>
+                ID: {(record.questUnit2 as any).questItemUnitId || (record.questUnit2 as any).quest_item_unit_id || record.question2}
+              </span>
+              <div style={{ marginTop: 4 }}>
+                <AudioPlayer
+                  urlNormal={record.questUnit2.urlNormal}
+                  urlSlow={record.questUnit2.urlSlow}
+                  size="small"
+                />
+              </div>
+            </div>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: '선택지/정답',
+      key: 'answer',
+      width: 200,
+      render: (_, record) => (
+        <Space direction="vertical" size="small">
+          {record.type === 'choice' && (
+            <>
+              {record.answerUnit1 && (
+                <div style={{ fontSize: '12px' }}>
+                  <Tag color="green">A1</Tag>
+                  <span style={{ marginLeft: 4 }}>{record.answerUnit1.str}</span>
+                  <span style={{ marginLeft: 4, fontSize: '12px', color: '#999' }}>
+                    ID: {(record.answerUnit1 as any).questItemUnitId || (record.answerUnit1 as any).quest_item_unit_id || record.answer1}
+                  </span>
+                </div>
+              )}
+              {record.answerUnit2 && (
+                <div style={{ fontSize: '12px' }}>
+                  <Tag color="green">A2</Tag>
+                  <span style={{ marginLeft: 4, }}>{record.answerUnit2.str}</span>
+                  <span style={{ marginLeft: 4, fontSize: '12px', color: '#999' }}>
+                    ID: {(record.answerUnit2 as any).questItemUnitId || (record.answerUnit2 as any).quest_item_unit_id || record.answer2}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          <div style={{ fontWeight: 500, color: '#1890ff' }}>
+            정답: {getAnswerDisplay(record)}
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: '비고',
+      dataIndex: 'remark',
+      key: 'remark',
+      width: 150,
+      ellipsis: true,
+      render: (remark: string) => remark || '-',
+    },
+    {
+      title: '작업',
+      key: 'actions',
+      width: 120,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="수정">
+            <Button
+              size="small"
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title="삭제">
+            <Button
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  const hasActiveFilters = searchText || selectedQuestId !== undefined || selectedType !== undefined;
+
+  return (
+    <div style={{ padding: 24, minHeight: 360, background: '#fff', borderRadius: '8px' }}>
+      {contextHolder}
+
+      {/* Header */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={3} style={{ margin: 0 }}>
+          문제 관리 (Quest Items)
+        </Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreate}
+          size="large"
+        >
+          새 Item 생성
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card style={{ marginBottom: 16 }} size="small">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24} md={8}>
+            <Search
+              placeholder="ID, 타입, Quest 제목으로 검색"
+              allowClear
+              enterButton={<SearchOutlined />}
+              size="large"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={(value) => setSearchText(value)}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={7}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Quest로 필터링"
+              size="large"
+              allowClear
+              value={selectedQuestId}
+              onChange={setSelectedQuestId}
+              suffixIcon={<FilterOutlined />}
+              showSearch
+              optionFilterProp="children"
+            >
+              {quests.map(quest => (
+                <Select.Option key={quest.questId} value={quest.questId}>
+                  [{quest.questId}] {quest.title}
+                </Select.Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={7}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="타입으로 필터링"
+              size="large"
+              allowClear
+              value={selectedType}
+              onChange={setSelectedType}
+              suffixIcon={<FilterOutlined />}
+            >
+              {uniqueTypes.map(type => (
+                <Select.Option key={type} value={type}>
+                  {type}
+                </Select.Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={24} md={2}>
+            <Tooltip title="필터 초기화">
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleClearFilters}
+                disabled={!hasActiveFilters}
+                size="large"
+                block
+              >
+                초기화
+              </Button>
+            </Tooltip>
+          </Col>
+        </Row>
+
+        {/* Filter summary */}
+        {hasActiveFilters && (
+          <div style={{ marginTop: 12, fontSize: '14px', color: '#666' }}>
+            <Space size="small" wrap>
+              <span>필터 적용됨:</span>
+              {searchText && <Tag color="blue">검색: {searchText}</Tag>}
+              {selectedQuestId && (
+                <Tag color="purple" closable onClose={() => setSelectedQuestId(undefined)}>
+                  Quest ID: {selectedQuestId}
+                </Tag>
+              )}
+              {selectedType && (
+                <Tag color="green" closable onClose={() => setSelectedType(undefined)}>
+                  타입: {selectedType}
+                </Tag>
+              )}
+            </Space>
+          </div>
+        )}
+      </Card>
+
+      {/* Table */}
+      <Table
+        columns={columns}
+        dataSource={filteredItems}
+        loading={loading}
+        pagination={{
+          pageSize: 20,
+          showTotal: (total, range) => `${range[0]}-${range[1]} / 총 ${total}개`,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+        }}
+        scroll={{ x: 1400 }}
+      />
+
+      {/* Modal */}
+      <QuestItemFormModal
+        visible={modalVisible}
+        mode={modalMode}
+        initialData={selectedItem}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedItem(null);
+        }}
+        onSuccess={loadItems}
+      />
+    </div>
+  );
 };
 
 export default ItemPage;
