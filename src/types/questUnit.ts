@@ -52,3 +52,48 @@ export interface UploadResponse {
   url: string;
   originalName: string;
 }
+
+export type QuestItemType = 'choice' | 'statement-question' | 'same-different';
+
+export interface QuestItem {
+  questItemId: number;
+  questId: number;
+  type: QuestItemType;
+  question1: number;
+  question2: number | null;
+  answer1: number | null;
+  answer2: number | null;
+  answerOx: string | null;
+  answerSq: string | null;
+  remark: string | null;
+  hasAnswer: boolean;
+  quest?: Quest;
+  questUnit1?: QuestUnit;
+  questUnit2?: QuestUnit;
+  answerUnit1?: QuestUnit;
+  answerUnit2?: QuestUnit;
+}
+
+export interface CreateQuestItemPayload {
+  questId: number;
+  type: QuestItemType;
+  question1: number;
+  question2?: number;
+  answer1?: number;
+  answer2?: number;
+  answerOx?: string;
+  answerSq?: string;
+  remark?: string;
+}
+
+export interface UpdateQuestItemPayload {
+  questId?: number;
+  type?: QuestItemType;
+  question1?: number;
+  question2?: number;
+  answer1?: number;
+  answer2?: number;
+  answerOx?: string;
+  answerSq?: string;
+  remark?: string;
+}
