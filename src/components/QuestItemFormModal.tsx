@@ -325,7 +325,7 @@ const QuestItemFormModal: React.FC<QuestItemFormModalProps> = ({
           {renderUnitField('Question 1', 'question1', true)}
 
           {(currentType === 'same-different') && renderUnitField('Question 2', 'question2', true)}
-          {(currentType === 'choice' || currentType === 'statement-question') && renderUnitField('Question 2 (선택사항)', 'question2', false)}
+          {(currentType === 'choice' || currentType === 'statement-question')}
 
           <Divider orientation="left">정답</Divider>
 
