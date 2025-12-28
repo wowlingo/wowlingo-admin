@@ -18,7 +18,8 @@ export interface Quest {
   questId: number;
   title: string;
   type: string;
-  questItemCount: number;
+  questItemCount: number; // 한 번에 보여줄 문제 개수
+  actualItemCount?: number; // 실제 등록된 문제 개수
   order: number;
   hashtags: string[];
 }
