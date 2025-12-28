@@ -102,6 +102,8 @@ const QuestPage: React.FC = () => {
 
     Modal.confirm({
       title: 'Quest 삭제',
+      width: 520,
+      maskClosable: false,
       content: (
         <div>
           <p>정말로 이 Quest를 삭제하시겠습니까?</p>
