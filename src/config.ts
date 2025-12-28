@@ -4,13 +4,13 @@ interface ServerConfig {
 
 const configurations: { [key: string]: ServerConfig } = {
   local: {
-    apiServer: 'http://localhost:8080',
+    apiServer: process.env.REACT_APP_API_SERVER_LOCAL || 'http://localhost:8080',
   },
   dev: {
-    apiServer: 'http://54.180.139.219:3000',
+    apiServer: process.env.REACT_APP_API_SERVER_DEV || 'http://localhost:8080',
   },
   prod: {
-    apiServer: 'http://54.180.139.219:3000',
+    apiServer: process.env.REACT_APP_API_SERVER_PROD || 'http://localhost:8080',
   },
 };
 
