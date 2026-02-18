@@ -245,3 +245,101 @@ npm install
   <br/>
   <img src="./src/assets/TF!_Logo_B1.png" alt="테크포임팩트 로고" width="200"/>
 </div>
+
+
+## 서버 세팅 방법 (Docker → 네이티브 서버 이관 가이드)
+네이티브 서버가 아래와 같이 설치 되었다고 가정하고 진행한다.
+
+### 1. 서버 설치
+- Mariadb
+- Apache2
+- openJDK-17
+- Node 20 LTS
+- npm 10.8.2 , pm2
+- Web Folder: /var/www/ 아래에 위치 할 것.
+
+
+### 2. 애플리케이션 배포
+2-1. 소스코드 추출
+( 기존 서버 Docker에서 소스코드를 추출해도 되고, 직접 소스에서 빌드 후 작업해도 된다. 본인은 직접 소스에서 빌드 후 작업하였다.)
+```bash
+# 빌드 전에 .env 파일을 수정
+cat > .env << 'EOF'
+# Environment
+REACT_APP_PHASE=prod
+
+# API Server URLs
+REACT_APP_API_SERVER_PROD=http://localhost:3000
+EOF
+
+# 빌드
+npm run build
+
+# tar 압축
+tar -cvf build.tar ./build
+```
+
+2-2. 새 서버로 빌드 파일 전송
+```bash
+sftp -i {pem파일} {접근 가능 user}@{새 서버 ip}
+put build.tar
+```
+
+2-3. 새 서버 디렉토리 구조 생성
+```bash
+sudo mkdir -p /var/www/wowlingo/admin
+```
+
+2-4. 새 서버에서 소스 배포
+```bash
+# tar 압축 해제
+tar -xvf build.tar .
+sudo cp -r ./build/* /var/www/wowlingo/admin/
+
+# 권한 설정
+sudo chown -R audadm:audadm /var/www/wowlingo/admin
+```
+
+### 3. Apache 설정 (정적 파일 서빙)
+```bash
+sudo tee /etc/apache2/sites-available/wowlingo-admin.conf << 'EOF'
+<VirtualHost *:8090>
+    ServerName {이관 서버 ip}
+    DocumentRoot /var/www/wowlingo/admin
+
+    <Directory /var/www/wowlingo/admin>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # React SPA 라우팅 지원
+        RewriteEngine On
+        RewriteBase /
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+</VirtualHost>
+EOF
+```
+
+### 4. 사이트 활성화 및 재시작
+```bash
+# ports.conf에 8090 리슨 추가 (이미 없다면)
+grep -q "Listen 8090" /etc/apache2/ports.conf || echo "Listen 8090" | sudo tee -a /etc/apache2/ports.conf
+
+# 기본 사이트 비활성화
+sudo a2dissite 000-default.conf
+
+# admin 사이트 활성화
+sudo a2ensite wowlingo-admin.conf
+
+# 설정 테스트 및 재시작
+sudo apache2ctl configtest
+sudo systemctl restart apache2
+```
+
+### 5. 확인
+```bash
+curl http://localhost:8090/
+``` 
